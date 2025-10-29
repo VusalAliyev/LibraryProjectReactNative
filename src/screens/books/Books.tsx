@@ -28,6 +28,7 @@ export default function Books() {
   const realm = useRealm();
   const navigation = useNavigation<any>();
   const { user } = useAppSelector((s) => s.session);
+  const isAdmin = !!user?.isSU; // ✅ admin kontrolü
   const [books, setBooks] = useState<Book[]>([]);
 
   useEffect(() => {
@@ -40,29 +41,46 @@ export default function Books() {
   }, [realm]);
 
   const addBook = () => {
+    if (!isAdmin) return; // sadece admin
     navigation.navigate("BookForm");
   };
 
   const borrowBook = (book: Book) => {
-    if (book.available <= 0) return;
-    realm.write(() => {
-      book.available -= 1;
-      book.updatedAt = new Date();
-    });
-  };
+    if (!user?._id) {
+      Alert.alert("Uyarı", "Lütfen önce giriş yapın.");
+      return;
+    }
 
-  const returnBook = (book: Book) => {
+    const existing = realm.objects("BorrowRequest").filtered(
+      "bookId == $0 && userId == $1 && status == 'pending'",
+      book._id,
+      new ObjectId(user._id)
+    );
+
+    if (existing.length > 0) {
+      Alert.alert("Zaten bekleyen bir isteğiniz var.");
+      return;
+    }
+
     realm.write(() => {
-      book.available += 1;
-      book.updatedAt = new Date();
+      realm.create("BorrowRequest", {
+        _id: new ObjectId(),
+        bookId: book._id,
+        userId: new ObjectId(user._id),
+        status: "pending",
+        requestedAt: new Date(),
+      });
     });
+
+    Alert.alert("Başarılı", "Ödünç isteği gönderildi!");
   };
 
   const deleteBook = (book: Book) => {
-    Alert.alert("Confirm", "Delete this book?", [
-      { text: "Cancel", style: "cancel" },
+    if (!isAdmin) return;
+    Alert.alert("Onay", "Bu kitabı silmek istiyor musunuz?", [
+      { text: "İptal", style: "cancel" },
       {
-        text: "Delete",
+        text: "Sil",
         style: "destructive",
         onPress: () => {
           realm.write(() => {
@@ -77,32 +95,33 @@ export default function Books() {
     <View style={styles.container}>
       <Text style={styles.header}>Books</Text>
 
-      <TouchableOpacity style={styles.addBtn} onPress={addBook}>
-        <Text style={styles.addText}>+ Add Book</Text>
-      </TouchableOpacity>
+      {/* ✅ Sadece admin için add button */}
+      {isAdmin && (
+        <TouchableOpacity style={styles.addBtn} onPress={addBook}>
+          <Text style={styles.addText}>+ Add Book</Text>
+        </TouchableOpacity>
+      )}
 
       <FlatList
         data={books}
         keyExtractor={(item) => String(item._id)}
         ListEmptyComponent={
-          <Text style={{ textAlign: "center", marginTop: 40, color: "#6B7280" }}>
-            No books yet. Add your first book!
+          <Text style={styles.emptyText}>
+            No books yet. {isAdmin ? "Add your first book!" : ""}
           </Text>
         }
         renderItem={({ item }) => (
           <View style={styles.item}>
-            {/* Cover thumbnail */}
+            {/* Cover image */}
             {item.coverUrl ? (
-              <Image
-                source={{ uri: item.coverUrl }}
-                style={styles.thumbnail}
-              />
+              <Image source={{ uri: item.coverUrl }} style={styles.thumbnail} />
             ) : (
               <View style={[styles.thumbnail, styles.noCover]}>
                 <Text style={{ color: "#9CA3AF", fontSize: 12 }}>No cover</Text>
               </View>
             )}
 
+            {/* Book info */}
             <View style={{ flex: 1 }}>
               <TouchableOpacity
                 onPress={() =>
@@ -124,23 +143,17 @@ export default function Books() {
               </Text>
             </View>
 
-            {item.available > 0 ? (
+            {/* ✅ Kullanıcı -> Borrow / ✅ Admin -> Delete */}
+            {!isAdmin && (
               <TouchableOpacity
                 style={styles.btn}
                 onPress={() => borrowBook(item)}
               >
                 <Text style={styles.btnText}>Borrow</Text>
               </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.btn, styles.returnBtn]}
-                onPress={() => returnBook(item)}
-              >
-                <Text style={styles.btnText}>Return</Text>
-              </TouchableOpacity>
             )}
 
-            {user?.isSU && (
+            {isAdmin && (
               <TouchableOpacity
                 style={[styles.btn, styles.delBtn]}
                 onPress={() => deleteBook(item)}
@@ -158,6 +171,7 @@ export default function Books() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   header: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
+  emptyText: { textAlign: "center", marginTop: 40, color: "#6B7280" },
   addBtn: {
     backgroundColor: "#111827",
     borderRadius: 8,
@@ -193,7 +207,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginLeft: 8,
   },
-  returnBtn: { backgroundColor: "#047857" },
   delBtn: { backgroundColor: "#B91C1C" },
   btnText: { color: "#fff" },
 });

@@ -6,11 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="c0932b29-b149-4d23-ab19-3ab3144e989d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/books/BookDetails.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/books/BookDetails.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/screens/books/BookForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/books/BookForm.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/books/Books.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/books/Books.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/my/MyBooks.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/my/MyBooks.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/requests/Requests.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/requests/Requests.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
