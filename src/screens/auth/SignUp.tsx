@@ -21,7 +21,7 @@ export default function SignUp() {
 
   const onSignUp = async () => {
     if (!email || !pass || !name) {
-      Alert.alert("Hata", "Tüm alanları doldurun.");
+      Alert.alert("Error", "Please fill in all fields.");
       return;
     }
 
@@ -32,7 +32,7 @@ export default function SignUp() {
         .objects("User")
         .filtered("email == $0", email.trim().toLowerCase());
       if (existing.length > 0) {
-        Alert.alert("Hata", "Bu e-posta zaten kayıtlı.");
+        Alert.alert("Error", "This email is already registered.");
         return;
       }
 
@@ -64,7 +64,7 @@ export default function SignUp() {
       );
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Kayıt başarısız", e?.message ?? "Bilinmeyen hata");
+      Alert.alert("Sign-up failed", e?.message ?? "Unknown error");
     } finally {
       setBusy(false);
     }
@@ -73,7 +73,7 @@ export default function SignUp() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
-      <Input label="Full Name" value={name} onChangeText={setName} placeholder="Ad Soyad" />
+      <Input label="Full Name" value={name} onChangeText={setName} placeholder="Full Name" />
       <Input
         label="Email"
         value={email}
@@ -94,7 +94,7 @@ export default function SignUp() {
         style={styles.hintLink}
         onPress={() => navigation.navigate("Login")}
       >
-        Zaten hesabın var mı? Giriş yap.
+        Already have an account? Log in.
       </Text>
     </View>
   );

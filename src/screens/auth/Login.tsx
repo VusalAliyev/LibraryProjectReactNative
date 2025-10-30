@@ -19,7 +19,7 @@ export default function Login() {
 
   const onLogin = async () => {
     if (!email || !pass) {
-      Alert.alert("Hata", "E-posta ve şifre gerekli.");
+      Alert.alert("Error", "Email and password are required.");
       return;
     }
     try {
@@ -29,13 +29,13 @@ export default function Login() {
         .filtered("email == $0", email.trim().toLowerCase())[0] as any;
 
       if (!user) {
-        Alert.alert("Hata", "Kullanıcı bulunamadı.");
+        Alert.alert("Error", "User not found.");
         return;
       }
 
       const ok = await verifyPassword(pass, user.passwordHash);
       if (!ok) {
-        Alert.alert("Hata", "Şifre hatalı.");
+        Alert.alert("Error", "Incorrect password.");
         return;
       }
 
@@ -49,7 +49,7 @@ export default function Login() {
       );
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Giriş başarısız", e?.message ?? "Bilinmeyen hata");
+      Alert.alert("Login failed", e?.message ?? "Unknown error");
     } finally {
       setBusy(false);
     }
@@ -78,7 +78,7 @@ export default function Login() {
         style={styles.hintLink}
         onPress={() => navigation.navigate("SignUp")}
       >
-        Hesabın yoksa buraya tıklayarak oluştur.
+        Don't have an account? Click here to create one.
       </Text>
     </View>
   );

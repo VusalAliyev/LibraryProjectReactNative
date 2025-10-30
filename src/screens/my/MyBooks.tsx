@@ -1,23 +1,30 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { useRealm } from "@realm/react";
 import { ObjectId } from "bson";
 import { useAppSelector } from "../../store";
 
 export default function MyBooks() {
   const realm = useRealm();
-  const { user } = useAppSelector(s => s.session);
+  const { user } = useAppSelector((s) => s.session);
+  const isAdmin = !!user?.isSU; // ✅ sadece admin kontrolü
   const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user?._id) return;
 
-    const data = realm.objects("BorrowRequest")
+    const data = realm
+      .objects("BorrowRequest")
       .filtered("userId == $0 && status == 'approved'", new ObjectId(user._id))
       .sorted("requestedAt", true);
 
     setRequests([...data]);
-
     const listener = () => setRequests([...data]);
     data.addListener(listener);
     return () => data.removeListener(listener);
@@ -29,6 +36,7 @@ export default function MyBooks() {
   };
 
   const markReturned = (req: any) => {
+    if (!isAdmin) return; // ✅ sadece admin izinli
     realm.write(() => {
       req.status = "returned";
       req.decidedAt = new Date();
@@ -47,9 +55,15 @@ export default function MyBooks() {
 
       <FlatList
         data={requests}
-        keyExtractor={r => String(r._id)}
+        keyExtractor={(r) => String(r._id)}
         ListEmptyComponent={
-          <Text style={{ textAlign: "center", marginTop: 40, color: "#6B7280" }}>
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 40,
+              color: "#6B7280",
+            }}
+          >
             You have no borrowed books.
           </Text>
         }
@@ -66,12 +80,15 @@ export default function MyBooks() {
                 <Text style={styles.dueText}>Due: {due}</Text>
               </View>
 
-              <TouchableOpacity
-                style={[styles.btn, styles.returnBtn]}
-                onPress={() => markReturned(item)}
-              >
-                <Text style={styles.btnText}>Return</Text>
-              </TouchableOpacity>
+              {/* ✅ Return butonu sadece admin için */}
+              {isAdmin && (
+                <TouchableOpacity
+                  style={[styles.btn, styles.returnBtn]}
+                  onPress={() => markReturned(item)}
+                >
+                  <Text style={styles.btnText}>Return</Text>
+                </TouchableOpacity>
+              )}
             </View>
           );
         }}

@@ -20,16 +20,14 @@ export default function BookDetails() {
   const realm = useRealm();
   const navigation = useNavigation<any>();
   const { user } = useAppSelector((s) => s.session);
+  const isAdmin = !!user?.isSU;
   const [book, setBook] = useState<any>(null);
 
   useEffect(() => {
     const obj = realm.objectForPrimaryKey("Book", new ObjectId(id));
     if (obj) setBook({ ...obj });
 
-    const listener = (updated: any) => {
-      setBook({ ...updated });
-    };
-
+    const listener = (updated: any) => setBook({ ...updated });
     obj?.addListener(listener);
     return () => obj?.removeListener(listener);
   }, [id]);
@@ -41,31 +39,70 @@ export default function BookDetails() {
       </View>
     );
 
-  const onBorrow = () => {
-    if (book.available <= 0) {
-      Alert.alert("Uyarı", "Bu kitap şu anda mevcut değil.");
-      return;
-    }
-    realm.write(() => {
-      book.available -= 1;
-      book.updatedAt = new Date();
-    });
-    Alert.alert("Başarılı", "Kitabı ödünç aldınız!");
+  // ✅ Kullanıcının aktif isteği olup olmadığını kontrol et
+  const hasActiveRequest = (userId: ObjectId) => {
+    const active = realm
+      .objects("BorrowRequest")
+      .filtered(
+        "userId == $0 AND (status == 'pending' OR status == 'approved')",
+        userId
+      );
+    return active.length > 0;
   };
 
-  const onReturn = () => {
+  // ✅ Kullanıcı kitap isteği oluşturuyor
+  const onRequestBorrow = () => {
+    if (!user?._id) {
+      Alert.alert("Warning", "Please log in first.");
+      return;
+    }
+
+    const userId = new ObjectId(user._id);
+
+    if (book.available <= 0) {
+      Alert.alert("Not Available", "This book is currently unavailable.");
+      return;
+    }
+
+    // Aktif isteği varsa
+    if (hasActiveRequest(userId)) {
+      Alert.alert(
+        "Already Borrowed",
+        "You already have an active book. Please return it before borrowing another one."
+      );
+      return;
+    }
+
+    // Zaten pending isteği varsa
+    const existing = realm.objects("BorrowRequest").filtered(
+      "bookId == $0 AND userId == $1 AND status == 'pending'",
+      book._id,
+      userId
+    );
+    if (existing.length > 0) {
+      Alert.alert("You already have a pending request for this book.");
+      return;
+    }
+
+    // ✅ Yeni istek oluştur
     realm.write(() => {
-      book.available += 1;
-      book.updatedAt = new Date();
+      realm.create("BorrowRequest", {
+        _id: new ObjectId(),
+        bookId: book._id,
+        userId,
+        status: "pending",
+        requestedAt: new Date(),
+      });
     });
-    Alert.alert("Başarılı", "Kitabı iade ettiniz!");
+
+    Alert.alert("Success", "Your borrow request has been sent!");
   };
 
   const onDelete = () => {
-    Alert.alert("Silme Onayı", "Bu kitabı silmek istiyor musunuz?", [
-      { text: "İptal", style: "cancel" },
+    Alert.alert("Delete Confirmation", "Do you want to delete this book?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: "Sil",
+        text: "Delete",
         style: "destructive",
         onPress: () => {
           realm.write(() => {
@@ -110,13 +147,15 @@ export default function BookDetails() {
       </View>
 
       {/* Actions */}
-      {book.available > 0 ? (
-        <Button title="Borrow Book" onPress={onBorrow} />
-      ) : (
-        <Button title="Return Book" onPress={onReturn} />
+      {!isAdmin && (
+        <Button
+          title="Request to Borrow"
+          onPress={onRequestBorrow}
+          disabled={book.available <= 0}
+        />
       )}
 
-      {user?.isSU && (
+      {isAdmin && (
         <>
           <Button
             title="Edit Book"
@@ -124,11 +163,7 @@ export default function BookDetails() {
               navigation.navigate("BookForm", { id: String(book._id) })
             }
           />
-          <Button
-            title="Delete Book"
-            onPress={onDelete}
-            disabled={false}
-          />
+          <Button title="Delete Book" onPress={onDelete} />
         </>
       )}
     </ScrollView>

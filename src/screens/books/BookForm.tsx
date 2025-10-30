@@ -55,7 +55,7 @@ export default function BookForm() {
 
   const onSave = () => {
     if (!title || !author) {
-      Alert.alert("Hata", "Lütfen tüm alanları doldurun.");
+      Alert.alert("Error", "Please fill in all fields.");
       return;
     }
 

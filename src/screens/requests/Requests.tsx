@@ -25,17 +25,31 @@ export default function Requests() {
     return user ? user.name : "Unknown User";
   };
 
+  // ✅ yardımcı fonksiyon — 7 gün sonrası
+  const getDueDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    return date;
+  };
+
   const approve = (req: any) => {
     realm.write(() => {
       req.status = "approved";
       req.decidedAt = new Date();
+      req.dueDate = getDueDate(); // ✅ 1 hafta sonrası
 
       const book = realm.objectForPrimaryKey("Book", req.bookId);
       if (book) {
+        if (book.available <= 0) {
+          Alert.alert("Error", "No copies available to lend.");
+          return;
+        }
         book.available -= 1;
         book.updatedAt = new Date();
       }
     });
+
+    Alert.alert("Approved", "Borrow request approved. Due in 7 days.");
   };
 
   const reject = (req: any) => {
@@ -43,18 +57,21 @@ export default function Requests() {
       req.status = "rejected";
       req.decidedAt = new Date();
     });
+    Alert.alert("Rejected", "Borrow request rejected.");
   };
 
   const markReturned = (req: any) => {
     realm.write(() => {
       req.status = "returned";
       req.decidedAt = new Date();
+
       const book = realm.objectForPrimaryKey("Book", req.bookId);
       if (book) {
         book.available += 1;
         book.updatedAt = new Date();
       }
     });
+    Alert.alert("Returned", "Book marked as returned.");
   };
 
   return (
@@ -82,6 +99,13 @@ export default function Requests() {
                 Requested: {new Date(item.requestedAt).toLocaleDateString()}{" "}
                 {new Date(item.requestedAt).toLocaleTimeString()}
               </Text>
+
+              {/* ✅ Eğer dueDate varsa gösterelim */}
+              {item.dueDate && (
+                <Text style={styles.dueDate}>
+                  Due: {new Date(item.dueDate).toLocaleDateString()}
+                </Text>
+              )}
 
               {item.status === "pending" && (
                 <View style={styles.row}>
@@ -126,6 +150,7 @@ const styles = StyleSheet.create({
   },
   bookTitle: { fontWeight: "600", fontSize: 16 },
   userName: { color: "#6B7280", marginBottom: 6 },
+  dueDate: { color: "#2563EB", fontWeight: "600", marginTop: 4 },
   row: { flexDirection: "row", marginTop: 8 },
   btn: {
     paddingVertical: 6,
